@@ -10,11 +10,37 @@ set -euo pipefail
 APT_BASE="https://us-central1-apt.pkg.dev/projects/antigravity-auto-updater-dev"
 PKG_INDEX_URL="${APT_BASE}/dists/antigravity-debian/main/binary-amd64/Packages"
 
-APP_DIR="/opt/antigravity"
-BIN_LINK="/usr/local/bin/antigravity"
-DESKTOP1="/usr/share/applications/antigravity.desktop"
-DESKTOP2="/usr/share/applications/antigravity-url-handler.desktop"
-ICON_PATH="/usr/share/pixmaps/antigravity.png"
+# =============================
+# CONFIGURABLE INSTALL PATHS
+# =============================
+# You can override these paths using environment variables:
+#   ANTIGRAVITY_APP_DIR    - Application installation directory
+#   ANTIGRAVITY_BIN_DIR    - Binary symlink directory
+#   ANTIGRAVITY_DESKTOP_DIR - Desktop files directory
+#   ANTIGRAVITY_ICON_DIR   - Icon files directory
+#
+# Example: ANTIGRAVITY_APP_DIR="/home/user/apps/antigravity" ./arch_antigravity_yashuu.sh
+# =============================
+
+APP_DIR="${ANTIGRAVITY_APP_DIR:-/opt/antigravity}"
+BIN_DIR="${ANTIGRAVITY_BIN_DIR:-/usr/local/bin}"
+DESKTOP_DIR="${ANTIGRAVITY_DESKTOP_DIR:-/usr/share/applications}"
+ICON_DIR="${ANTIGRAVITY_ICON_DIR:-/usr/share/pixmaps}"
+
+BIN_LINK="${BIN_DIR}/antigravity"
+DESKTOP1="${DESKTOP_DIR}/antigravity.desktop"
+DESKTOP2="${DESKTOP_DIR}/antigravity-url-handler.desktop"
+ICON_PATH="${ICON_DIR}/antigravity.png"
+
+# =============================
+# VALIDATE PATHS
+# =============================
+echo "[*] Using installation paths:"
+echo "    APP_DIR: $APP_DIR"
+echo "    BIN_LINK: $BIN_LINK"
+echo "    DESKTOP_DIR: $DESKTOP_DIR"
+echo "    ICON_DIR: $ICON_DIR"
+echo
 
 # =============================
 # UNINSTALL
@@ -133,27 +159,32 @@ fi
 # BINARY LINK
 # =============================
 echo "[*] Creating launcher..."
+sudo mkdir -p "$BIN_DIR"
 sudo ln -sf "$APP_DIR/antigravity" "$BIN_LINK"
 
 # =============================
 # DESKTOP FILES
 # =============================
 echo "[*] Installing desktop entries..."
+sudo mkdir -p "$DESKTOP_DIR"
 
 if [[ -f usr/share/applications/antigravity.desktop ]]; then
-  sed 's|^Exec=.*|Exec=/usr/local/bin/antigravity %U|g' \
+  sed "s|^Exec=.*|Exec=${BIN_LINK} %U|g" \
     usr/share/applications/antigravity.desktop | sudo tee "$DESKTOP1" >/dev/null
 fi
 
 if [[ -f usr/share/applications/antigravity-url-handler.desktop ]]; then
-  sed 's|^Exec=.*|Exec=/usr/local/bin/antigravity %U|g' \
+  sed "s|^Exec=.*|Exec=${BIN_LINK} %U|g" \
     usr/share/applications/antigravity-url-handler.desktop | sudo tee "$DESKTOP2" >/dev/null
 fi
 
 # =============================
 # ICON
 # =============================
-[[ -f usr/share/pixmaps/antigravity.png ]] && sudo cp usr/share/pixmaps/antigravity.png "$ICON_PATH"
+if [[ -f usr/share/pixmaps/antigravity.png ]]; then
+  sudo mkdir -p "$ICON_DIR"
+  sudo cp usr/share/pixmaps/antigravity.png "$ICON_PATH"
+fi
 
 # =============================
 # DONE
